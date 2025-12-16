@@ -3,7 +3,7 @@ import connectToDatabase from "@/lib/mongodb";
 import Student from "@/lib/models/Item";
 import { pusher } from "@/lib/pusher";
 
-export async function PUT(request, { params }) {
+export async function PUT(request : Request, { params } : {params : {id : string}}) {
   const { id } = params;
   const { name, course, rollNo, batch, timing } = await request.json();
 
@@ -23,7 +23,7 @@ export async function PUT(request, { params }) {
   return NextResponse.json(updatedStudent);
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request : Request, { params } : {params : {id : string}}) {
   const { id } = params;
 
   await connectToDatabase();
