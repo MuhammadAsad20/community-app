@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SignedIn, useAuth } from '@clerk/nextjs';
+import { pusherClient } from '@/lib/pusherClient';
 
 export default function Home() {
   const [students, setStudents] = useState([]);
@@ -18,12 +19,14 @@ export default function Home() {
   const router = useRouter();
   const { isSignedIn } = useAuth();
 
+  // 🔐 Auth protection
   useEffect(() => {
     if (!isSignedIn) {
       router.push('/login');
     }
   }, [isSignedIn, router]);
 
+  // 📥 Initial data fetch
   const fetchStudents = async () => {
     const res = await fetch('/api/items');
     const data = await res.json();
@@ -36,8 +39,40 @@ export default function Home() {
     }
   }, [isSignedIn]);
 
+  // 🔔 Pusher real-time listeners
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    const channel = pusherClient.subscribe('students-channel');
+
+    channel.bind('student-created', (data) => {
+      setStudents((prev) => [data.student, ...prev]);
+    });
+
+    channel.bind('student-updated', (data) => {
+      setStudents((prev) =>
+        prev.map((s) =>
+          s._id === data.student._id ? data.student : s
+        )
+      );
+    });
+
+    channel.bind('student-deleted', (data) => {
+      setStudents((prev) =>
+        prev.filter((s) => s._id !== data.id)
+      );
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusherClient.unsubscribe('students-channel');
+    };
+  }, [isSignedIn]);
+
+  // ➕➖ Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (editingId) {
       await fetch(`/api/items/${editingId}`, {
         method: 'PUT',
@@ -52,10 +87,11 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
     setForm({ name: '', course: '', rollNo: '', batch: '', timing: '' });
-    fetchStudents();
   };
 
+  // ✏️ Edit
   const handleEdit = (student) => {
     setForm({
       name: student.name,
@@ -67,15 +103,18 @@ export default function Home() {
     setEditingId(student._id);
   };
 
+  // ❌ Delete
   const handleDelete = async (id) => {
     await fetch(`/api/items/${id}`, { method: 'DELETE' });
-    fetchStudents();
   };
 
   return (
     <SignedIn>
       <main className="px-8 pt-28">
-        <h1 className="text-3xl text-center text-gray-800 font-bold mb-4">Admin Panel</h1>
+        <h1 className="text-3xl text-center text-gray-800 font-bold mb-4">
+          Admin Panel
+        </h1>
+
         <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="text"
@@ -117,10 +156,12 @@ export default function Home() {
             className="border p-2"
             required
           />
+
           <button type="submit" className="bg-blue-500 text-white px-4 py-2 col-span-1 md:col-span-2">
             {editingId ? 'Update' : 'Add'}
           </button>
         </form>
+
         <ul>
           {students.map((student) => (
             <li
@@ -134,16 +175,17 @@ export default function Home() {
                 <p><strong>Batch:</strong> {student.batch}</p>
                 <p><strong>Timing:</strong> {student.timing}</p>
               </div>
-              <div className="flex space-x-2 flex-row">
+
+              <div className="flex space-x-2">
                 <button
                   onClick={() => handleEdit(student)}
-                  className="text-yellow-500 text-lg  px-4 py-1 "
+                  className="text-yellow-500 px-4 py-1"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(student._id)}
-                  className="text-red-500 text-lg  px-4 py-1"
+                  className="text-red-500 px-4 py-1"
                 >
                   Delete
                 </button>
