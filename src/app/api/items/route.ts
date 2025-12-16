@@ -9,7 +9,7 @@ export async function GET() {
   return NextResponse.json(students);
 }
 
-export async function POST(request) {
+export async function POST(request : Request) {
   await connectToDatabase();
 
   const { name, course, rollNo, batch, timing } = await request.json();
