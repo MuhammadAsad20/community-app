@@ -41,7 +41,7 @@ const AboutUs = () => {
             About Us
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl">
-            Learn more about our mission, vision, and team.
+            Learn more about our mission, vision, and team!
           </p>
         </motion.div>
 
