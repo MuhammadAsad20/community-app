@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.9.6",
+    "@supabase/supabase-js": "^2.89.0",
     "flowbite-react": "^0.10.1",
     "framer-motion": "^11.3.4",
     "mongoose": "^8.5.1",
